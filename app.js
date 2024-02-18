@@ -91,6 +91,38 @@ app.get("/mode", (req, res) => {
   });
 });
 
+app.get("/all", (req, res, next) => {
+  const { nums } = req.query;
+  if (!nums) {
+    const err = new EE(
+      "You must pass a query key of nums with a comma-separated list of numbers.",
+      400
+    );
+    return next(err);
+  }
+  const lst = nums.split(",");
+  let sum = 0;
+  let v = [];
+  for (let num of lst) {
+    if (Number.isNaN(+num)) {
+      const NaNErr = new EE(`Bad request, ${num} is not a Number.`, 400);
+      return next(NaNErr);
+    } else {
+      sum += +num;
+      v.push(+num);
+    }
+  }
+  const values = [...v].sort((a, b) => a - b);
+  const half = Math.floor(values.length / 2);
+  res.json({
+    response: {
+      operation: "all",
+      mean: sum / lst.length,
+      median: values[half],
+      mode: mode(v),
+    },
+  });
+});
 /** general error handler */
 
 app.use(function (req, res, next) {
