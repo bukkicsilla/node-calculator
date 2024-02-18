@@ -1,6 +1,7 @@
 //https://stackoverflow.com/questions/52898456/simplest-way-of-finding-mode-in-javascript
 
 const express = require("express");
+const EE = require("./error");
 const app = express();
 
 const mode = (a) =>
@@ -15,16 +16,23 @@ const mode = (a) =>
     }, {})
   ).reduce((a, v) => (v[0] < a[0] ? a : v), [0, null])[1];
 
-app.get("/mean/", (req, res) => {
+app.get("/mean/", (req, res, next) => {
   const { nums } = req.query;
   if (!nums) {
-    return res.status(400).send("Numbers are required!");
+    //return res.status(400).send("Numbers are required!");
+    const err = new EE(
+      "You must pass a query key of nums with a comma-separated list of numbers.",
+      400
+    );
+    return next(err);
   }
   const lst = nums.split(",");
   let sum = 0;
   for (let num of lst) {
     if (Number.isNaN(+num)) {
-      return res.status(400).send(`Bad request, ${num} is not a Number.`);
+      //return res.status(400).send(`Bad request, ${num} is not a Number.`);
+      const NaNErr = new EE(`Bad request, ${num} is not a Number.`, 400);
+      return next(NaNErr);
     } else {
       sum += +num;
     }
@@ -83,6 +91,25 @@ app.get("/mode", (req, res) => {
   });
 });
 
+/** general error handler */
+
+app.use(function (req, res, next) {
+  const err = new EE("Not Found", 404);
+
+  // pass the error to the next piece of middleware
+  return next(err);
+});
+
+/** general error handler */
+
+app.use(function (err, req, res, next) {
+  res.status(err.status || 500);
+
+  return res.json({
+    error: err,
+    //message: err.message,
+  });
+});
 app.listen(3000, () => {
   console.log("Listening on port 3000.");
 });
